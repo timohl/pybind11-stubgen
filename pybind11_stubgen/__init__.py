@@ -37,6 +37,7 @@ from pybind11_stubgen.parser.mixins.fix import (
     FixNumpyArrayDimTypeVar,
     FixNumpyArrayFlags,
     FixNumpyArrayRemoveParameters,
+    FixNumpyArrayUseArrayLike,
     FixNumpyDtype,
     FixPEP585CollectionNames,
     FixPybind11EnumStrDoc,
@@ -71,6 +72,7 @@ class CLIArgs(Namespace):
     numpy_array_wrap_with_annotated: bool
     numpy_array_use_type_var: bool
     numpy_array_remove_parameters: bool
+    numpy_array_use_array_like: bool
     print_invalid_expressions_as_is: bool
     print_safe_value_reprs: re.Pattern | None
     exit_code: bool
@@ -175,6 +177,13 @@ def arg_parser() -> ArgumentParser:
         help="Replace 'numpy.ndarray[...]' with 'numpy.ndarray'",
     )
 
+    numpy_array_fix.add_argument(
+        "--numpy-array-use-array-like",
+        default=False,
+        action="store_true",
+        help="Replace 'numpy.ndarray' with 'numpy.typing.ArrayLike'",
+    )
+
     parser.add_argument(
         "--print-invalid-expressions-as-is",
         default=False,
@@ -247,6 +256,7 @@ def stub_parser_from_args(args: CLIArgs) -> IParser:
             if args.numpy_array_remove_parameters
             else []
         ),
+        *([FixNumpyArrayUseArrayLike] if args.numpy_array_use_array_like else []),
     ]
 
     class Parser(

@@ -766,6 +766,35 @@ class FixNumpyArrayRemoveParameters(IParser):
             result.parameters = None
         return result
 
+class FixNumpyArrayUseArrayLike(IParser):
+    __ndarray_name = QualifiedName.from_str("numpy.ndarray")
+
+    __array_like_used: bool = False
+
+    def handle_module(
+        self, path: QualifiedName, module: types.ModuleType
+    ) -> Module | None:
+        old_array_like_used = self.__array_like_used
+        result = super().handle_module(path, module)
+        if result is None:
+            return None
+        if self.__array_like_used:
+            result.imports.add(
+                Import(name=None, origin=QualifiedName.from_str("numpy.typing"))
+            )
+        self.__array_like_used = old_array_like_used
+        return result
+
+    def parse_args_str(
+        self, args_str: str
+    ) -> list[Argument]:
+        result = super().parse_args_str(args_str)
+        for arg in result:
+            if isinstance(arg.annotation, ResolvedType) and arg.annotation.name == self.__ndarray_name:
+                arg.annotation.name = QualifiedName.from_str("numpy.typing.ArrayLike")
+                arg.annotation.parameters = None
+                self.__array_like_used = True
+        return result
 
 class FixScipyTypeArguments(IParser):
     def parse_annotation_str(
